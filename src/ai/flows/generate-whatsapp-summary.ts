@@ -12,21 +12,9 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const StudentWithRankSchema = z.object({
-  name: z.string().describe('The name of the student.'),
-  marks: z.number().describe('The marks obtained by the student.'),
-  rank: z.number().describe('The rank of the student.'),
-});
-
-const TopRankerSchema = z.object({
-    name: z.string(),
-    marks: z.number(),
-});
-
 const GenerateWhatsappSummaryInputSchema = z.object({
   className: z.string().describe('The name of the class.'),
   subjectName: z.string().describe('The name of the subject.'),
-  totalMarks: z.number().describe('The total possible marks for the exam.'),
   students: z.array(
     z.object({
       name: z.string().describe('The name of the student.'),
@@ -37,106 +25,75 @@ const GenerateWhatsappSummaryInputSchema = z.object({
 export type GenerateWhatsappSummaryInput = z.infer<typeof GenerateWhatsappSummaryInputSchema>;
 
 
-const GenerateWhatsappSummaryInternalInputSchema = z.object({
-  className: z.string(),
-  subjectName: z.string(),
-  date: z.string().describe('The date the report was generated.'),
-  rankedStudents: z.array(StudentWithRankSchema).describe('The list of students, ranked.'),
-  topRankers: z.array(TopRankerSchema).describe('The list of the top 3 students.'),
-  totalStudents: z.number().describe('The total number of students in the report.'),
-});
-
-
 const GenerateWhatsappSummaryOutputSchema = z.object({
   message: z.string().describe('The formatted message for WhatsApp.'),
 });
 export type GenerateWhatsappSummaryOutput = z.infer<typeof GenerateWhatsappSummaryOutputSchema>;
 
 export async function generateWhatsappSummary(input: GenerateWhatsappSummaryInput): Promise<GenerateWhatsappSummaryOutput> {
-  const sortedStudents = [...input.students].sort((a, b) => b.marks - a.marks);
-  
-  const rankedStudents = sortedStudents.map((student, index) => {
-    return {
-      ...student,
-      marks: Number(student.marks) || 0,
-      rank: index + 1,
-    };
-  });
-  
-  const topRankers = sortedStudents.slice(0, 3).map(student => ({
-      name: student.name,
-      marks: Number(student.marks) || 0
-  }));
-    
-  const today = new Date();
-  const dateString = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-  return generateWhatsappSummaryFlow({ 
-      className: input.className,
-      subjectName: input.subjectName,
-      date: dateString, 
-      rankedStudents,
-      topRankers,
-      totalStudents: sortedStudents.length 
-  });
+  return generateWhatsappSummaryFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'generateWhatsappSummaryPrompt',
-  input: {schema: GenerateWhatsappSummaryInternalInputSchema},
+  input: {schema: GenerateWhatsappSummaryInputSchema},
   output: {schema: GenerateWhatsappSummaryOutputSchema},
   prompt: `You are an expert at formatting data for plain text messaging apps like WhatsApp.
 Your task is to convert the following JSON data into a clean, readable, monospaced format.
 
 **Data:**
 School Name: Abhinav Public School Ajanale
-Date: {{{date}}}
+Date: Use today's date in "dd Mon yyyy" format (e.g., 29 Jul 2024).
 Class Name: {{{className}}}
 Subject Name: {{{subjectName}}}
-Top Rankers: {{{json topRankers}}}
-Ranked Students: {{{json rankedStudents}}}
-Total Students: {{{totalStudents}}}
+Students Data: {{{json students}}}
 
 **Instructions:**
-1.  Start with the school name and date, each on a new line and formatted with asterisks for bolding.
-2.  Use hyphens to create separator lines.
-3.  Add a header for the class and subject.
-4.  After the subject, list the "Top Rankers". For each top ranker, show their name and their marks in parentheses. Make the marks bold.
-5.  Create a header row for all students: "*Rank | Student Name | Marks*".
-6.  For each student in 'rankedStudents', create a row with their rank, name, and marks. Ensure the columns are properly aligned. Make the marks bold.
-7.  At the end, add a line for the total number of students.
-8.  The entire output should be a single string with newlines.
+1.  **Sort the students:** Sort the 'students' array in descending order based on their 'marks'.
+2.  **Rank the students:** Assign a rank to each student based on their sorted position. The student with the highest marks gets rank 1.
+3.  **Identify Top Rankers:** Identify the top 3 students.
+4.  **Format the Output:** Create a single string with newlines for the WhatsApp message. Follow the format below precisely.
+    - Start with the school name and date, each on a new line and formatted with asterisks for bolding.
+    - Use hyphens to create separator lines.
+    - Add a header for the class and subject.
+    - After the subject, list the "Top Rankers". For each top ranker, show their name and their marks in parentheses. Make the marks bold (e.g., *95*).
+    - Create a header row for all students: "*Rank | Student Name | Marks*".
+    - For each student, create a row with their rank, name, and marks. Ensure the columns are properly aligned to form a neat table. Make the marks bold.
+    - At the end, add a line for the total number of students.
 
-**Formatted Output:**
+**Example Output Format:**
 \`\`\`
 *Abhinav Public School Ajanale*
-*Date:* {{{date}}}
+*Date:* 29 Jul 2024
 ---------------------------------
 *Marks Summary*
-*Class:* {{{className}}}
-*Subject:* {{{subjectName}}}
+*Class:* 6th Standard
+*Subject:* Science (Unit Test 1)
 
 *Top Rankers:*
-{{#each topRankers}}
-- {{name}} (*{{marks}}*)
-{{/each}}
+- Priya Joshi (*95*)
+- Rahul Sharma (*92*)
+- Sneha Deshmukh (*88*)
 ---------------------------------
 *Rank | Student Name | Marks*
 ---------------------------------
-{{#each rankedStudents}}
-{{rank}}.   | {{name}} | *{{marks}}*
-{{/each}}
+1.   | Priya Joshi    | *95*
+2.   | Rahul Sharma   | *92*
+3.   | Sneha Deshmukh | *88*
+4.   | Aryan Patil    | *85*
+...and so on for all students
 ---------------------------------
-*Total Students:* {{{totalStudents}}}
+*Total Students:* 10
 ---------------------------------
 \`\`\`
-`,
+
+Now, format the provided data.`,
 });
 
 const generateWhatsappSummaryFlow = ai.defineFlow(
   {
     name: 'generateWhatsappSummaryFlow',
-    inputSchema: GenerateWhatsappSummaryInternalInputSchema,
+    inputSchema: GenerateWhatsappSummaryInputSchema,
     outputSchema: GenerateWhatsappSummaryOutputSchema,
   },
   async input => {

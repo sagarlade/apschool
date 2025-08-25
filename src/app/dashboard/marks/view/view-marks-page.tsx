@@ -1,4 +1,3 @@
-
 // src/app/dashboard/marks/view/view-marks-page.tsx
 "use client";
 
@@ -271,7 +270,6 @@ export default function ViewMarksPage() {
           className,
           subjectName: `${subjectName} (${selectedExam.name})`,
           students: studentsForApi,
-          totalMarks: selectedExam.totalMarks,
         });
         const encodedMessage = encodeURIComponent(result.message);
         window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
