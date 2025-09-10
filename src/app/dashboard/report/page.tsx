@@ -161,6 +161,7 @@ export default function ReportPage() {
       for (const markDoc of marksDocs) {
           const className = classMap.get(markDoc.classId) || "Unknown Class";
           const exam = examMap.get(markDoc.examId);
+          if (!exam) continue; // Skip marks for deleted exams
 
           for (const studentMark of markDoc.marks) {
               if (studentMark.marks === null || studentMark.marks === undefined) continue;
@@ -187,14 +188,21 @@ export default function ReportPage() {
                   studentEntry.marks[subjectName] = [];
               }
               
-              studentEntry.marks[subjectName].push({
-                  value: studentMark.marks,
-                  subjectId: markDoc.subjectId,
-                  examId: markDoc.examId,
-                  examName: exam?.name || "Unknown Exam",
-                  examDate: markDoc.examDate,
-                  totalMarks: exam?.totalMarks || 0,
-              });
+              const existingMarkIndex = studentEntry.marks[subjectName].findIndex(m => m.examId === markDoc.examId);
+              const newMark: ReportMark = {
+                value: studentMark.marks,
+                subjectId: markDoc.subjectId,
+                examId: markDoc.examId,
+                examName: exam.name,
+                examDate: markDoc.examDate,
+                totalMarks: exam.totalMarks,
+              };
+
+              if (existingMarkIndex > -1) {
+                studentEntry.marks[subjectName][existingMarkIndex] = newMark;
+              } else {
+                studentEntry.marks[subjectName].push(newMark);
+              }
           }
       }
       
@@ -235,6 +243,7 @@ export default function ReportPage() {
   useEffect(() => {
     const lowercasedQuery = searchQuery.toLowerCase();
     
+    // Start with class and name search filter
     let filtered = reportData.filter(row => {
       const matchesSearch =
         row.studentName.toLowerCase().includes(lowercasedQuery) ||
@@ -243,26 +252,36 @@ export default function ReportPage() {
       return matchesSearch && matchesClass;
     });
 
+    // If an exam is selected, transform the data to show only that exam's marks
     if (selectedExamId !== 'all') {
-        const classStudents = reportData.filter(row => selectedClassId === 'all' || row.classId === selectedClassId);
+        const exam = allExams.find(e => e.id === selectedExamId);
+        if (!exam) {
+            setFilteredReportData([]); // Clear data if exam is not found
+            return;
+        }
 
-        let examTotalPossibleMarks = 0;
-        const subjectsForExamInClass = new Set<string>();
-        
-        // Determine the set of subjects and total marks for this specific exam within the selected class context
+        // Calculate total possible marks for the selected exam
+        // We need to find which subjects this exam was conducted for.
+        const subjectsForExam = new Set<string>();
         reportData.forEach(student => {
-             if (selectedClassId === 'all' || student.classId === selectedClassId) {
-                Object.values(student.marks).flat().forEach(mark => {
-                    if (mark.examId === selectedExamId) {
-                        if(!subjectsForExamInClass.has(mark.subjectId)) {
-                            subjectsForExamInClass.add(mark.subjectId);
-                            examTotalPossibleMarks += mark.totalMarks || 0;
-                        }
-                    }
-                });
-            }
+            Object.values(student.marks).flat().forEach(mark => {
+                if (mark.examId === selectedExamId) {
+                    subjectsForExam.add(mark.subjectId);
+                }
+            });
         });
-        
+
+        const examTotalPossibleMarks = Array.from(subjectsForExam).reduce((acc, subjectId) => {
+            // Find an instance of this mark to get its total
+            let markInstance;
+            for(const student of reportData) {
+                markInstance = Object.values(student.marks).flat().find(m => m.examId === selectedExamId && m.subjectId === subjectId);
+                if (markInstance) break;
+            }
+             return acc + (markInstance?.totalMarks || 0);
+        }, 0);
+
+
         filtered = filtered.map(student => {
             let examTotal = 0;
 
@@ -270,7 +289,7 @@ export default function ReportPage() {
                 const examMark = marks.find(m => m.examId === selectedExamId);
                 if(examMark) {
                     acc[subjectName] = [examMark];
-                    const markValue = typeof examMark.value === 'number' ? examMark.value : 0;
+                    const markValue = typeof examMark.value === 'number' ? examMark.value : parseFloat(examMark.value) || 0;
                     examTotal += markValue;
                 }
                 return acc;
@@ -279,43 +298,26 @@ export default function ReportPage() {
             const percentage = examTotalPossibleMarks > 0 ? (examTotal / examTotalPossibleMarks) * 100 : 0;
             
             return { ...student, marks: marksForExam, totalMarks: examTotal, totalPossibleMarks: examTotalPossibleMarks, percentage };
-        }).filter(student => Object.keys(student.marks).length > 0);
+        }).filter(student => Object.keys(student.marks).length > 0); // Only show students who took the exam
     }
 
     filtered.sort((a, b) => b.totalMarks - a.totalMarks);
     setFilteredReportData(filtered);
     setSelectedStudents(new Set()); // Reset selection on filter change
 
-  }, [searchQuery, selectedClassId, selectedExamId, reportData]);
+  }, [searchQuery, selectedClassId, selectedExamId, reportData, allExams]);
 
 
   const subjectHeaders = useMemo(() => {
-    const data = filteredReportData.length > 0 ? filteredReportData : reportData;
     const headers = new Set<string>();
-
-    if (selectedClassId !== 'all' || selectedExamId !== 'all') {
-      // If a class or exam is selected, only show subjects relevant to those students
-      filteredReportData.forEach(row => {
+    filteredReportData.forEach(row => {
         Object.keys(row.marks).forEach(subjectName => {
-          headers.add(subjectName);
+            headers.add(subjectName);
         });
-      });
-    } else {
-      // If "All Classes" is selected, show all subjects that have any marks entered
-       data.forEach(row => {
-        Object.keys(row.marks).forEach(subjectName => {
-          headers.add(subjectName);
-        });
-      });
-    }
-    
-    // Fallback to all subjects if no marks are found at all for the selection
-    if (headers.size === 0) {
-      return allSubjects.map(s => s.name).sort((a, b) => a.localeCompare(b));
-    }
+    });
 
     return Array.from(headers).sort((a, b) => a.localeCompare(b));
-  }, [filteredReportData, reportData, selectedClassId, selectedExamId, allSubjects]);
+  }, [filteredReportData]);
 
   const handleShare = () => {
     startShareTransition(async () => {
@@ -797,10 +799,10 @@ export default function ReportPage() {
                          <TableCell key={subjectName} className="text-center font-mono">
                             {marks.length > 0 ? (
                                 marks.map((mark, index) => (
-                                    <div key={index} className="flex items-center justify-center gap-2 group">
+                                    <div key={index} className="flex items-center justify-center gap-2 group text-xs">
                                         <span>{mark.value ?? '-'}</span>
                                         {selectedExamId === 'all' && (
-                                          <span className="text-xs text-muted-foreground">({mark.examName})</span>
+                                          <span className="text-muted-foreground">({mark.examName})</span>
                                         )}
                                     </div>
                                 ))
@@ -1019,6 +1021,3 @@ export default function ReportPage() {
     </main>
   );
 }
-
-    
-    
