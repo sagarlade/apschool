@@ -5,7 +5,7 @@
 import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Loader2, Pencil, UserPlus, FileText, ClipboardList, Users, UserCog } from "lucide-react";
+import { Loader2, Pencil, UserPlus, FileText, ClipboardList, Users, UserCog, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -130,6 +130,20 @@ export default function HomePage() {
                     </CardHeader>
                     <CardContent>
                         <Button onClick={() => router.push('/dashboard/report')}>View Full Report</Button>
+                    </CardContent>
+                </Card>
+                 <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex flex-row items-center gap-4">
+                         <div className="bg-amber-400/10 p-3 rounded-full">
+                            <Star className="w-6 h-6 text-amber-500" />
+                        </div>
+                        <div>
+                            <CardTitle>Scholarship Report</CardTitle>
+                            <CardDescription>View a dedicated report for scholarship exams.</CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => router.push('/dashboard/report/scholarship')} variant="outline">View Scholarship Report</Button>
                     </CardContent>
                 </Card>
                 <Card className="hover:shadow-lg transition-shadow">
