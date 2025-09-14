@@ -606,6 +606,7 @@ export default function ReportPage() {
             title: "AI Summary Error",
             description: "Could not generate the AI-powered summary for the report card.",
             variant: "destructive",
+            
           });
         } finally {
           setIsSummaryLoading(false);
@@ -760,7 +761,7 @@ export default function ReportPage() {
                 <TableRow>
                   <TableHead className="sticky left-0 bg-background z-10 w-12">
                      <Checkbox 
-                        checked={selectedStudents.size > 0 && selectedStudents.size === filteredReportData.length}
+                        checked={filteredReportData.length > 0 && selectedStudents.size === filteredReportData.length}
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all rows"
                      />
@@ -1021,3 +1022,5 @@ export default function ReportPage() {
     </main>
   );
 }
+
+    
