@@ -188,7 +188,6 @@ export default function ReportPage() {
                   studentEntry.marks[subjectName] = [];
               }
               
-              const existingMarkIndex = studentEntry.marks[subjectName].findIndex(m => m.examId === markDoc.examId);
               const newMark: ReportMark = {
                 value: studentMark.marks,
                 subjectId: markDoc.subjectId,
@@ -197,10 +196,10 @@ export default function ReportPage() {
                 examDate: markDoc.examDate,
                 totalMarks: exam.totalMarks,
               };
-
-              if (existingMarkIndex > -1) {
-                studentEntry.marks[subjectName][existingMarkIndex] = newMark;
-              } else {
+              
+              // This ensures we don't add duplicate marks if data is malformed
+              const markExists = studentEntry.marks[subjectName].some(m => m.examId === newMark.examId);
+              if (!markExists) {
                 studentEntry.marks[subjectName].push(newMark);
               }
           }
@@ -316,8 +315,17 @@ export default function ReportPage() {
         });
     });
 
-    return Array.from(headers).sort((a, b) => a.localeCompare(b));
-  }, [filteredReportData]);
+    // Get a sorted list of all subjects from props to maintain order
+    const allSubjectNames = allSubjects.map(s => s.name);
+    return Array.from(headers).sort((a, b) => {
+      const indexA = allSubjectNames.indexOf(a);
+      const indexB = allSubjectNames.indexOf(b);
+      if(indexA === -1) return 1;
+      if(indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
+  }, [filteredReportData, allSubjects]);
 
   const handleShare = () => {
     startShareTransition(async () => {
@@ -801,7 +809,7 @@ export default function ReportPage() {
                             {marks.length > 0 ? (
                                 marks.map((mark, index) => (
                                     <div key={index} className="flex items-center justify-center gap-2 group text-xs">
-                                        <span>{mark.value ?? '-'}</span>
+                                        <span>{String(mark.value) ?? '-'}</span>
                                         {selectedExamId === 'all' && (
                                           <span className="text-muted-foreground">({mark.examName})</span>
                                         )}
@@ -878,7 +886,7 @@ export default function ReportPage() {
                                                   <span className="text-muted-foreground">{mark.examName}</span>
                                                 )}
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-mono font-medium">{mark.value}</span>
+                                                    <span className="font-mono font-medium">{String(mark.value)}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -1022,5 +1030,7 @@ export default function ReportPage() {
     </main>
   );
 }
+
+    
 
     
