@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getStudentsByClass, getMarksForSubject, getExams, getClasses, getSubjects, saveMarks, deleteMark } from "@/lib/data";
-import { generateWhatsappSummary } from "@/ai/flows/generate-whatsapp-summary";
+import { createWhatsappMessage } from "@/lib/utils";
 import type { Student, Exam, Class, Subject, Mark, MarkWithExam } from "@/lib/data";
 import { Label } from "@/components/ui/label";
 
@@ -242,41 +242,41 @@ export default function ViewMarksPage() {
     };
 
     const handleShare = () => {
-    startShareTransition(async () => {
-      if (!classId || !subjectId || !selectedExamId) {
-        toast({ title: "Selection missing", description: "Please select a class, subject, and exam.", variant: "destructive" });
-        return;
-      }
-      const selectedExam = allExams.find(e => e.id === selectedExamId);
-      if(!selectedExam) return;
+      startShareTransition(() => {
+        if (!classId || !subjectId || !selectedExamId) {
+          toast({ title: "Selection missing", description: "Please select an exam to share.", variant: "destructive" });
+          return;
+        }
+        const selectedExam = allExams.find(e => e.id === selectedExamId);
+        if(!selectedExam) return;
 
-      const className = currentClass?.name || '';
-      const subjectName = currentSubject?.name || '';
-      
-      const studentsForApi = marksData
-        .map(s => ({ 
-            name: s.studentName, 
-            marks: s.marks[selectedExamId]?.value
-        }))
-        .filter(s => s.marks !== null && s.marks !== undefined) as { name: string, marks: number }[];
+        const className = currentClass?.name || '';
+        const subjectName = currentSubject?.name || '';
         
-      if (studentsForApi.length === 0) {
-        toast({ title: "No marks entered", description: "Please enter marks for at least one student to share.", variant: "destructive" });
-        return;
-      }
+        const studentsForMessage = marksData
+          .map(s => ({ 
+              name: s.studentName, 
+              marks: s.marks[selectedExamId]?.value
+          }))
+          .filter(s => s.marks !== null && s.marks !== undefined) as { name: string, marks: number }[];
+          
+        if (studentsForMessage.length === 0) {
+          toast({ title: "No marks entered", description: "No marks found for the selected exam to share.", variant: "destructive" });
+          return;
+        }
 
-      try {
-        const result = await generateWhatsappSummary({
-          className,
-          subjectName: `${subjectName} (${selectedExam.name})`,
-          students: studentsForApi,
-        });
-        const encodedMessage = encodeURIComponent(result.message);
-        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-      } catch (error) {
-        console.error("Error generating summary:", error);
-        toast({ title: "Error", description: "Could not generate WhatsApp summary.", variant: "destructive" });
-      }
+        try {
+          const message = createWhatsappMessage({
+            className,
+            subjectName: `${subjectName} (${selectedExam.name})`,
+            students: studentsForMessage,
+          });
+          const encodedMessage = encodeURIComponent(message);
+          window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        } catch (error) {
+          console.error("Error generating summary:", error);
+          toast({ title: "Error", description: "Could not generate WhatsApp summary.", variant: "destructive" });
+        }
     });
   };
     
