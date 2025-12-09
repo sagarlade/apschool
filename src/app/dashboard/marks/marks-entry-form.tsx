@@ -1,4 +1,3 @@
-
 // src/app/dashboard/marks/marks-entry-form.tsx
 "use client";
 
@@ -45,9 +44,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider";
-import { cn } from "@/lib/utils";
+import { cn, createWhatsappMessage } from "@/lib/utils";
 
-import { generateWhatsappSummary } from "@/ai/flows/generate-whatsapp-summary";
 import type { Class, Subject, Student, Mark, Exam } from "@/lib/data";
 import { getClasses, getSubjects, getStudentsByClass, getExams, saveMarks } from "@/lib/data";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -103,17 +101,17 @@ export default function MarksEntryForm() {
 
     let subjects = [...allSubjects];
 
-    const isSeniorClass = selectedClass && SENIOR_CLASS_NAMES.includes(selectedClass.name);
     const isScholarshipExam = selectedExam?.name.toLowerCase().includes('scholarship');
 
     if (isScholarshipExam) {
         // If it's a scholarship exam, it has its own specific list of subjects,
-        // which takes precedence.
+        // which takes precedence over any other filter.
         return allSubjects.filter(s => SCHOLARSHIP_SUBJECT_NAMES.includes(s.name));
     }
     
+    // If not a scholarship exam, check if it is a senior class.
+    const isSeniorClass = selectedClass && SENIOR_CLASS_NAMES.includes(selectedClass.name);
     if (isSeniorClass) {
-        // If not a scholarship exam, but it is a senior class, filter by senior subjects.
         subjects = subjects.filter(s => SENIOR_SUBJECT_NAMES.includes(s.name));
     }
 
@@ -247,14 +245,14 @@ export default function MarksEntryForm() {
   };
   
   const handleSubjectChange = (subjectId: string) => {
-    updateUrlParams({ ...selectedIds, subjectId });
+    updateUrlParams({ subjectId });
   };
 
   const handleExamChange = (examId: string) => {
     // When exam changes, reset subject to ensure it's valid for the new exam type
-    updateUrlParams({ ...selectedIds, examId, subjectId: '' });
+    updateUrlParams({ examId, subjectId: '' });
   };
-
+  
   const handleMarksChange = (studentId: string, value: string) => {
     // If the input is empty, clear the marks
     if (value === '') {
@@ -341,18 +339,18 @@ export default function MarksEntryForm() {
   };
 
   const handleShare = () => {
-    startShareTransition(async () => {
+    startShareTransition(() => {
       const { classId, subjectId, examId } = selectedIds;
       if (!classId || !subjectId || !examId) {
         toast({ title: "Selection missing", description: "Please select a class, subject, and exam.", variant: "destructive" });
         return;
       }
       
-      const studentsForApi = studentsWithMarks
+      const studentsForMessage = studentsWithMarks
         .filter(s => s.marks !== null && typeof s.marks !== 'undefined')
         .map(s => ({ name: s.name, marks: s.marks! }));
         
-      if (studentsForApi.length === 0) {
+      if (studentsForMessage.length === 0) {
         toast({ title: "No marks entered", description: "Please enter marks for at least one student to share.", variant: "destructive" });
         return;
       }
@@ -360,16 +358,14 @@ export default function MarksEntryForm() {
       const className = allClasses.find(c => c.id === classId)?.name || '';
       const subjectName = allSubjects.find(s => s.id === subjectId)?.name || '';
       const examName = allExams.find(e => e.id === examId)?.name || '';
-      const totalMarks = allExams.find(e => e.id === examId)?.totalMarks || 100;
-
+      
       try {
-        const result = await generateWhatsappSummary({
+        const message = createWhatsappMessage({
           className,
           subjectName: `${subjectName} (${examName})`,
-          students: studentsForApi,
-          totalMarks: totalMarks,
+          students: studentsForMessage,
         });
-        const encodedMessage = encodeURIComponent(result.message);
+        const encodedMessage = encodeURIComponent(message);
         window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
       } catch (error) {
         console.error("Error generating summary:", error);
@@ -594,6 +590,3 @@ export default function MarksEntryForm() {
     </main>
   );
 }
-
-    
-    
