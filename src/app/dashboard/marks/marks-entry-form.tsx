@@ -67,8 +67,8 @@ const SENIOR_SUBJECT_NAMES = [
 const SCHOLARSHIP_SUBJECT_NAMES = ['Math', 'English', 'Marathi', 'बुद्धिमत्ता चाचणी'];
 
 const combinedSubjects = [
-  { id: 'combined-marathi-english', name: 'Marathi + English' },
-  { id: 'combined-maths-itsc', name: 'Maths + ITSC' }
+  { id: 'combined-marathi-english', name: 'Marathi + Maths' },
+    { id: 'combined-maths-itsc', name: 'बुद्धिमत्ता चाचणी + English' }
 ];
 
 export default function MarksEntryForm() {
@@ -103,9 +103,7 @@ export default function MarksEntryForm() {
   
   const isScholarshipExam = selectedExam?.name.toLowerCase().includes('scholarship');
   const totalMarksDisplay = isScholarshipExam ? parseInt(selectedIds.marksType || '100') : selectedExam?.totalMarks ?? 100;
-  
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
+
   const filteredSubjects = useMemo(() => {
     if (!selectedClass && !selectedExam) return allSubjects;
 
@@ -137,10 +135,7 @@ export default function MarksEntryForm() {
         classId: searchParams.get('classId') || '',
         subjectId: searchParams.get('subjectId') || '',
         examId: searchParams.get('examId') || '',
-<<<<<<< HEAD
         marksType: searchParams.get('marksType') || '',
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
     });
   }, [searchParams]);
 
@@ -183,7 +178,7 @@ export default function MarksEntryForm() {
         }
         
         // Always reset to empty marks for new entry
-        const finalStudents = studentData.map((s) => ({ ...s, marks: null, status: 'Pending', isDirty: false }));
+        const finalStudents: StudentWithMarks[] = studentData.map((s) => ({ ...s, marks: null, status: 'Pending' as const, isDirty: false }));
         setStudentsWithMarks(finalStudents);
 
       } catch (error) {
@@ -264,13 +259,10 @@ export default function MarksEntryForm() {
     updateUrlParams({ subjectId });
   };
 
-<<<<<<< HEAD
   const handleMarksTypeChange = (marksType: string) => {
     updateUrlParams({ marksType, subjectId: '' });
   };
 
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
   const handleExamChange = (examId: string) => {
     // When exam changes, reset subject to ensure it's valid for the new exam type
     updateUrlParams({ examId, subjectId: '' });
@@ -294,11 +286,7 @@ export default function MarksEntryForm() {
         return;
     }
     
-<<<<<<< HEAD
     const totalMarks = isScholarshipExam ? parseInt(selectedIds.marksType || '100') : selectedExam?.totalMarks ?? 100;
-=======
-    const totalMarks = selectedExam?.totalMarks ?? 100;
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
     const passingMarks = totalMarks * 0.4;
     const clampedMarks = Math.max(0, Math.min(totalMarks, newMarks));
     const status: StudentWithMarks['status'] = clampedMarks >= passingMarks ? 'Pass' : 'Fail';
@@ -318,7 +306,6 @@ export default function MarksEntryForm() {
      toast({ title: "Marks Cleared", description: "All entered marks have been reset." });
   }
 
-<<<<<<< HEAD
   const handleExport = () => {
     const className = selectedClass?.name || '';
     const subjectName = filteredSubjects.find(s => s.id === selectedIds.subjectId)?.name || '';
@@ -335,8 +322,6 @@ export default function MarksEntryForm() {
     document.body.removeChild(link);
   };
 
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
   const handleSave = () => {
     startSaveTransition(async () => {
       const { classId, subjectId, examId } = selectedIds;
@@ -372,12 +357,9 @@ export default function MarksEntryForm() {
       
       if(result.success) {
          toast({ title: "Success!", description: "Marks have been saved successfully!" });
-<<<<<<< HEAD
          // Save to localStorage
          const key = `${classId}_${subjectId}_${examId}`;
          localStorage.setItem(key, JSON.stringify(studentDetails));
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
          // Reset dirty state after saving
          setStudentsWithMarks(prev => prev.map(s => ({...s, marks: null, isDirty: false, status: 'Pending'})))
       } else {
@@ -408,15 +390,11 @@ export default function MarksEntryForm() {
       }
 
       const className = allClasses.find(c => c.id === classId)?.name || '';
-<<<<<<< HEAD
       let subjectName = allSubjects.find(s => s.id === subjectId)?.name || '';
       if (!subjectName) {
         if (subjectId === 'combined-marathi-english') subjectName = 'Marathi + English';
         else if (subjectId === 'combined-maths-itsc') subjectName = 'Maths + ITSC';
       }
-=======
-      const subjectName = allSubjects.find(s => s.id === subjectId)?.name || '';
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
       const examName = allExams.find(e => e.id === examId)?.name || '';
       
       try {
@@ -474,11 +452,7 @@ export default function MarksEntryForm() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-<<<<<<< HEAD
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto] gap-4 p-4 rounded-lg bg-muted/50 border items-center">
-=======
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.5fr_auto_auto] gap-4 p-4 rounded-lg bg-muted/50 border items-center">
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
             <Select onValueChange={handleClassChange} value={selectedIds.classId}>
               <SelectTrigger><SelectValue placeholder="1. Select Class" /></SelectTrigger>
               <SelectContent>
@@ -498,7 +472,6 @@ export default function MarksEntryForm() {
                     ))}
                 </SelectContent>
             </Select>
-<<<<<<< HEAD
             {isScholarshipExam && (
               <Select onValueChange={handleMarksTypeChange} value={selectedIds.marksType} disabled={!selectedIds.examId}>
                 <SelectTrigger><SelectValue placeholder="3. Select Marks Type" /></SelectTrigger>
@@ -510,10 +483,6 @@ export default function MarksEntryForm() {
             )}
             <Select onValueChange={handleSubjectChange} value={selectedIds.subjectId} disabled={!selectedIds.examId || (isScholarshipExam && !selectedIds.marksType)}>
               <SelectTrigger><SelectValue placeholder={isScholarshipExam ? "4. Select Subject" : "3. Select Subject"} /></SelectTrigger>
-=======
-            <Select onValueChange={handleSubjectChange} value={selectedIds.subjectId} disabled={!selectedIds.examId}>
-              <SelectTrigger><SelectValue placeholder="3. Select Subject" /></SelectTrigger>
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
               <SelectContent>
                 {filteredSubjects.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
               </SelectContent>
@@ -572,11 +541,7 @@ export default function MarksEntryForm() {
                           </div>
                           <div className="grid grid-cols-2 gap-4 items-center">
                               <div>
-<<<<<<< HEAD
                                 <label className="text-sm font-medium text-muted-foreground">Marks (0-{totalMarksDisplay})</label>
-=======
-                                <label className="text-sm font-medium text-muted-foreground">Marks (0-{selectedExam?.totalMarks ?? '100'})</label>
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
                                 <Input
                                   type="number"
                                   value={student.marks ?? ''}
@@ -584,11 +549,7 @@ export default function MarksEntryForm() {
                                   placeholder="-"
                                   className="mt-1"
                                   disabled={!selectedIds.examId}
-<<<<<<< HEAD
                                   max={totalMarksDisplay}
-=======
-                                  max={selectedExam?.totalMarks}
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
                                 />
                               </div>
                           </div>
@@ -610,11 +571,7 @@ export default function MarksEntryForm() {
                 <TableRow>
                   <TableHead className="w-[80px]">#</TableHead>
                   <TableHead>Student Name</TableHead>
-<<<<<<< HEAD
                   <TableHead className="w-[180px]">Marks (0-{totalMarksDisplay})</TableHead>
-=======
-                  <TableHead className="w-[180px]">Marks (0-{selectedExam?.totalMarks ?? '100'})</TableHead>
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
                   <TableHead className="w-[120px]">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -675,12 +632,9 @@ export default function MarksEntryForm() {
             {isSharing ? <Loader2 className="animate-spin" /> : <Share2 />}
             <span>Share on WhatsApp</span>
           </Button>
-<<<<<<< HEAD
           <Button size="lg" variant="outline" onClick={handleExport} disabled={studentsWithMarks.length === 0}>
             <span>Export to CSV</span>
           </Button>
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
         </CardFooter>
       </Card>
     </main>

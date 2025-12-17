@@ -33,14 +33,24 @@ export interface Mark {
     status: string;
 }
 
+export interface MarksDocument {
+  id: string;
+  classId: string;
+  subjectId: string;
+  subjectName?: string;
+  examId: string;
+  examName: string;
+  examDate?: string;
+  totalMarks: number;
+  marks: Mark[];
+  lastUpdated?: any;
+}
+
 export interface MarkWithExam extends Mark {
     examId: string;
     examName: string;
     examDate?: string;
-<<<<<<< HEAD
     subjectName?: string;
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
 }
 
 const defaultClasses: Omit<Class, 'id'>[] = [
@@ -414,16 +424,10 @@ export async function getMarksForSubject(classId: string, subjectId: string): Pr
     const examId = data.examId;
     const examName = data.examName;
     const examDate = data.examDate; // Get the date
-<<<<<<< HEAD
     const subjectName = data.subjectName || 'Unknown';
     if (data.marks && Array.isArray(data.marks)) {
       data.marks.forEach((mark: Mark) => {
         allMarks.push({ ...mark, examId, examName, examDate, subjectName });
-=======
-    if (data.marks && Array.isArray(data.marks)) {
-      data.marks.forEach((mark: Mark) => {
-        allMarks.push({ ...mark, examId, examName, examDate });
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
       });
     }
   });
@@ -466,10 +470,10 @@ export async function deleteMark(classId: string, subjectId: string, examId: str
 }
 
 
-export async function getAllMarks() {
+export async function getAllMarks(): Promise<MarksDocument[]> {
     const marksCol = collection(db, 'marks');
     const marksSnapshot = await getDocs(marksCol);
-    return marksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return marksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarksDocument));
 }
 
 export async function saveMarks(data: { classId: string; subjectId: string; examId: string, marks: Mark[], examDate?: string }) {
@@ -481,7 +485,6 @@ export async function saveMarks(data: { classId: string; subjectId: string; exam
         return { success: true, message: "No marks data provided." };
     }
 
-<<<<<<< HEAD
     // Get subject name
     let subjectName = data.subjectId;
     const subjectDoc = await getDoc(doc(db, 'subjects', data.subjectId));
@@ -492,8 +495,6 @@ export async function saveMarks(data: { classId: string; subjectId: string; exam
         else if (data.subjectId === 'combined-maths-itsc') subjectName = 'Maths + ITSC';
     }
 
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
     const docId = `${data.classId}_${data.subjectId}_${data.examId}`;
     const docRef = doc(db, 'marks', docId);
 
@@ -511,10 +512,7 @@ export async function saveMarks(data: { classId: string; subjectId: string; exam
                 transaction.set(docRef, {
                     classId: data.classId,
                     subjectId: data.subjectId,
-<<<<<<< HEAD
                     subjectName,
-=======
->>>>>>> 43471bc2e76e2a9d8fa433a921f82e592f1bd686
                     examId: data.examId,
                     examName: examData.name,
                     examDate: data.examDate || null, // Add exam date
